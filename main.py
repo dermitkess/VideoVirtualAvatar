@@ -4,25 +4,65 @@ import sounddevice as sd
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from pathlib import Path
 import sys
+import json
+import os
 from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QComboBox, QPushButton, QLabel
 from PyQt6.QtCore import Qt
 
+# Определение базовой директории для PyInstaller
+if getattr(sys, 'frozen', False):
+    base_dir = Path(sys._MEIPASS)
+else:
+    base_dir = Path(__file__).parent
+assets_dir = base_dir / "assets"
+config_path = base_dir / "config.json"
+
 # Инициализация PyGame
 pygame.init()
-WINDOW_SIZE = [1080, 1080]  # Изменено на список для возможности модификации
+DEFAULT_WINDOW_SIZE = [1080, 1080]
+WINDOW_SIZE = DEFAULT_WINDOW_SIZE.copy()
 screen = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption("Video Avatar")
 
 # Глобальные переменные
-NUM_STAGES = 2  # Начальное количество стадий (2: закрыт/открыт)
-THRESHOLDS = [0.05]  # Начальные пороги для 2 стадий
+DEFAULT_NUM_STAGES = 2
+NUM_STAGES = DEFAULT_NUM_STAGES
+THRESHOLDS = [0.05]
 video_paths = []
 players = []
 current_video = 0
 show_interface = False
 
-# Проверка существования директории assets и видеофайлов
-assets_dir = Path(__file__).parent / "assets"
+# Загрузка настроек из файла
+def load_config():
+    global NUM_STAGES, WINDOW_SIZE
+    try:
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                NUM_STAGES = config.get('num_stages', DEFAULT_NUM_STAGES)
+                WINDOW_SIZE = config.get('window_size', DEFAULT_WINDOW_SIZE)
+                if NUM_STAGES not in [2, 3, 4]:
+                    NUM_STAGES = DEFAULT_NUM_STAGES
+                if WINDOW_SIZE not in [[720, 720], [1080, 1080], [1280, 720]]:
+                    WINDOW_SIZE = DEFAULT_WINDOW_SIZE
+    except Exception as e:
+        print(f"Ошибка при загрузке конфигурации: {e}")
+
+# Сохранение настроек в файл
+def save_config():
+    try:
+        config = {
+            'num_stages': NUM_STAGES,
+            'window_size': WINDOW_SIZE
+        }
+        with open(config_path, 'w') as f:
+            json.dump(config, f)
+    except Exception as e:
+        print(f"Ошибка при сохранении конфигурации: {e}")
+
+# Загрузка начальных настроек
+load_config()
 
 class VideoPlayer:
     def __init__(self, video_path):
@@ -31,8 +71,6 @@ class VideoPlayer:
             self.fps = self.clip.fps
             self.duration = self.clip.duration
             self.current_time = 0
-            
-            # Автоповорот (если видео вертикальное)
             if self.clip.size[0] < self.clip.size[1]:
                 self.clip = self.clip.rotate(90)
         except Exception as e:
@@ -49,12 +87,10 @@ class VideoPlayer:
             return None
 
     def close(self):
-        """Закрытие видеоклипа для освобождения ресурсов"""
         if hasattr(self, 'clip') and self.clip:
             self.clip.close()
 
 def update_video_paths_and_players(num_stages):
-    """Обновление путей к видео и игроков в зависимости от количества стадий"""
     global video_paths, players
     video_paths = [assets_dir / f"{i}.mp4" for i in range(num_stages)]
     
@@ -62,8 +98,7 @@ def update_video_paths_and_players(num_stages):
     for path in video_paths:
         if not path.exists():
             print(f"Ошибка: Видеофайл {path} не найден")
-            pygame.quit()
-            sys.exit()
+            return False
     
     # Закрытие предыдущих плееров
     for player in players:
@@ -71,10 +106,14 @@ def update_video_paths_and_players(num_stages):
     
     # Инициализация новых плееров
     players.clear()
-    players.extend([VideoPlayer(path) for path in video_paths])
+    try:
+        players.extend([VideoPlayer(path) for path in video_paths])
+        return True
+    except Exception as e:
+        print(f"Ошибка при инициализации видеоплееров: {e}")
+        return False
 
 def update_thresholds(num_stages):
-    """Обновление порогов в зависимости от количества стадий"""
     global THRESHOLDS
     if num_stages == 2:
         THRESHOLDS = [0.05]
@@ -84,7 +123,9 @@ def update_thresholds(num_stages):
         THRESHOLDS = [0.02, 0.04, 0.06]
 
 # Инициализация начальных видео и порогов
-update_video_paths_and_players(NUM_STAGES)
+if not update_video_paths_and_players(NUM_STAGES):
+    pygame.quit()
+    sys.exit()
 update_thresholds(NUM_STAGES)
 
 class SettingsDialog(QDialog):
@@ -96,46 +137,49 @@ class SettingsDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout()
-
-        # Выбор количества стадий
         self.stages_label = QLabel("Количество стадий открытия рта:")
         layout.addWidget(self.stages_label)
         self.stages_combo = QComboBox()
         self.stages_combo.addItems(["2", "3", "4"])
         self.stages_combo.setCurrentText(str(NUM_STAGES))
         layout.addWidget(self.stages_combo)
-
-        # Выбор размера окна
         self.size_label = QLabel("Размер окна:")
         layout.addWidget(self.size_label)
         self.size_combo = QComboBox()
         self.size_combo.addItems(["720x720", "1080x1080", "1280x720"])
         self.size_combo.setCurrentText(f"{WINDOW_SIZE[0]}x{WINDOW_SIZE[1]}")
         layout.addWidget(self.size_combo)
-
-        # Кнопка "Применить"
         self.apply_button = QPushButton("Применить")
         self.apply_button.clicked.connect(self.apply_settings)
         layout.addWidget(self.apply_button)
-
         self.setLayout(layout)
 
     def apply_settings(self):
         global NUM_STAGES, WINDOW_SIZE, screen
-        # Обновление количества стадий
         new_stages = int(self.stages_combo.currentText())
-        if new_stages != NUM_STAGES:
-            NUM_STAGES = new_stages
-            update_thresholds(NUM_STAGES)
-            update_video_paths_and_players(NUM_STAGES)
-
-        # Обновление размера окна
         new_size = self.size_combo.currentText()
         width, height = map(int, new_size.split("x"))
-        if [width, height] != WINDOW_SIZE:
-            WINDOW_SIZE = [width, height]
-            screen = pygame.display.set_mode(WINDOW_SIZE)
 
+        # Проверка и обновление стадий
+        if new_stages != NUM_STAGES:
+            if update_video_paths_and_players(new_stages):
+                NUM_STAGES = new_stages
+                update_thresholds(NUM_STAGES)
+            else:
+                print(f"Не удалось изменить количество стадий: требуются видеофайлы для {new_stages} стадий")
+                return
+
+        # Обновление размера окна
+        if [width, height] != WINDOW_SIZE:
+            try:
+                WINDOW_SIZE = [width, height]
+                screen = pygame.display.set_mode(WINDOW_SIZE)
+            except Exception as e:
+                print(f"Ошибка при изменении размера окна: {e}")
+                return
+
+        # Сохранение настроек
+        save_config()
         self.accept()
 
 def audio_callback(indata, frames, time, status):
@@ -144,13 +188,12 @@ def audio_callback(indata, frames, time, status):
         print(f"Аудио ошибка: {status}")
     try:
         rms = np.sqrt(np.mean(np.square(indata)))
-        # Выбор видео на основе порогов
         for i, threshold in enumerate(THRESHOLDS):
             if rms <= threshold:
                 current_video = i
                 break
         else:
-            current_video = len(THRESHOLDS)  # Последняя стадия
+            current_video = len(THRESHOLDS)
     except Exception as e:
         print(f"Ошибка в обработке аудио: {e}")
 
@@ -184,7 +227,7 @@ try:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    elif event.key == pygame.K_i:  # Показать/скрыть интерфейс по клавише I
+                    elif event.key == pygame.K_i:
                         if show_interface:
                             settings_dialog.hide()
                             show_interface = False
