@@ -16,7 +16,7 @@ else:
     base_dir = Path(__file__).parent
 assets_dir = base_dir / "assets"
 config_path = base_dir / "config.json"
-icon_path = base_dir / "icon.png"
+icon_path = base_dir / "icon.ico"
 
 # Инициализация PyGame
 pygame.init()
@@ -26,8 +26,12 @@ try:
     screen = pygame.display.set_mode(WINDOW_SIZE)
     # Установка иконки окна
     if icon_path.exists():
-        icon = pygame.image.load(icon_path)
-        pygame.display.set_icon(icon)
+        try:
+            # Загружаем иконку и конвертируем в формат, совместимый с Pygame
+            icon_surface = pygame.image.load(icon_path)
+            pygame.display.set_icon(icon_surface)
+        except Exception as e:
+            print(f"Предупреждение: Не удалось загрузить иконку {icon_path} для окна: {e}")
     else:
         print(f"Предупреждение: Файл иконки {icon_path} не найден")
 except Exception as e:
