@@ -14,7 +14,7 @@ VideoVirtualAvatar — это приложение для использован
 - **FFmpeg**: Требуется для работы `moviepy`
 - **Операционная система**: Windows, macOS или Linux
 - **Видеофайлы**: Файлы `0.mp4`, `1.mp4` (и, опционально, `2.mp4`, `3.mp4`) в папке `assets`
-- **Иконка**: Файл `icon.png` в корне проекта для иконки приложения
+- **Иконка**: Файл `icon.ico` в корне проекта для иконки приложения
 
 ### Установка
 
@@ -50,8 +50,8 @@ VideoVirtualAvatar — это приложение для использован
    - Скачать видеофайлы можно по ссылке: [вставьте ссылку на Google Drive/Dropbox].
 
 5. **Добавьте иконку**:
-   - Поместите файл `icon.png` в корень проекта (`VideoVirtualAvatar`).
-   - Убедитесь, что файл имеет формат PNG и подходящий размер (например, 32x32 или 64x64 пикселей).
+   - Поместите файл `icon.ico` в корень проекта (`VideoVirtualAvatar`).
+   - Убедитесь, что файл имеет формат ICO и подходящий размер (например, 32x32 или 64x64 пикселей).
 
 6. **Запустите программу**:
    ```bash
@@ -73,18 +73,18 @@ VideoVirtualAvatar — это приложение для использован
 2. Скомпилируйте программу без консоли:
    - Если `ffmpeg.exe` находится в папке проекта:
      ```bash
-     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-binary "ffmpeg.exe;." --add-data "config.json;." --icon=icon.png --name VideoAvatar main.py
+     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-binary "ffmpeg.exe;." --add-data "config.json;." --icon=icon.ico --name VideoAvatar main.py
      ```
    - Если FFmpeg установлен в системе:
      ```bash
-     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-data "config.json;." --icon=icon.png --name VideoAvatar main.py
+     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-data "config.json;." --icon=icon.ico --name VideoAvatar main.py
      ```
-3. Найдите `VideoAvatar.exe` в папке `dist`. Иконка приложения будет взята из `icon.png`.
+3. Найдите `VideoAvatar.exe` в папке `dist`. Иконка приложения будет взята из `icon.ico`.
 
 ### Устранение неполадок
 - **Отсутствуют видеофайлы**: Убедитесь, что файлы `0.mp4`, `1.mp4` (и, при необходимости, `2.mp4`, `3.mp4`) находятся в папке `assets`.
 - **FFmpeg не найден**: Проверьте, что `ffmpeg.exe` доступен в PATH или в папке проекта.
-- **Иконка не отображается**: Убедитесь, что `icon.png` находится в корне проекта и имеет правильный формат.
+- **Иконка не отображается**: Убедитесь, что `icon.ico` находится в корне проекта и имеет правильный формат.
 - **Программа вылетает при изменении настроек**: Убедитесь, что все видеофайлы для выбранного количества стадий присутствуют.
 
 ---
@@ -99,7 +99,7 @@ VideoVirtualAvatar is an application that uses videofiles as a virtual webcam, s
 - **FFmpeg**: Required for `moviepy`
 - **Operating System**: Windows, macOS, or Linux
 - **Videofiles**: Files `0.mp4`, `1.mp4` (and optionally `2.mp4`, `3.mp4`) in the `assets` folder
-- **Icon**: File `icon.png` in the project root for the application icon
+- **Icon**: File `icon.ico` in the project root for the application icon
 
 ### Installation
 
@@ -135,8 +135,8 @@ VideoVirtualAvatar is an application that uses videofiles as a virtual webcam, s
    - Download videofiles from: [insert Google Drive/Dropbox link].
 
 5. **Add the icon**:
-   - Place the `icon.png` file in the project root (`VideoVirtualAvatar`).
-   - Ensure the file is in PNG format and has an appropriate size (e.g., 32x32 or 64x64 pixels).
+   - Place the `icon.ico` file in the project root (`VideoVirtualAvatar`).
+   - Ensure the file is in ICO format and has an appropriate size (e.g., 32x32 or 64x64 pixels).
 
 6. **Run the program**:
    ```bash
@@ -158,16 +158,16 @@ VideoVirtualAvatar is an application that uses videofiles as a virtual webcam, s
 2. Compile the program without a console:
    - If `ffmpeg.exe` is in the project folder:
      ```bash
-     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-binary "ffmpeg.exe;." --add-data "config.json;." --icon=icon.png --name VideoAvatar main.py
+     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-binary "ffmpeg.exe;." --add-data "config.json;." --icon=icon.ico --name VideoAvatar main.py
      ```
    - If FFmpeg is installed system-wide:
      ```bash
-     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-data "config.json;." --icon=icon.png --name VideoAvatar main.py
+     pyinstaller --onefile --noconsole --add-data "assets;assets" --add-data "config.json;." --icon=icon.ico --name VideoAvatar main.py
      ```
-3. Find `VideoAvatar.exe` in the `dist` folder. The application icon will be set from `icon.png`.
+3. Find `VideoAvatar.exe` in the `dist` folder. The application icon will be set from `icon.ico`.
 
 ### Troubleshooting
 - **Missing videofiles**: Ensure `0.mp4`, `1.mp4` (and, if needed, `2.mp4`, `3.mp4`) are in the `assets` folder.
 - **FFmpeg not found**: Verify that `ffmpeg.exe` is in PATH or the project folder.
-- **Icon not displayed**: Ensure `icon.png` is in the project root and in the correct format.
+- **Icon not displayed**: Ensure `icon.ico` is in the project root and in the correct format.
 - **Program crashes on settings change**: Ensure all videofiles for the selected number of stages are present.
