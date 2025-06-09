@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import json
 import os
-from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QComboBox, QPushButton, QLabel
+from PyQt6.QtWidgets import QApplication, QDialog, QVBoxLayout, QComboBox, QPushButton, QLabel, QMessageBox
 from PyQt6.QtCore import Qt
 
 # Определение базовой директории для PyInstaller
@@ -16,13 +16,24 @@ else:
     base_dir = Path(__file__).parent
 assets_dir = base_dir / "assets"
 config_path = base_dir / "config.json"
+icon_path = base_dir / "icon.png"
 
 # Инициализация PyGame
 pygame.init()
 DEFAULT_WINDOW_SIZE = [1080, 1080]
 WINDOW_SIZE = DEFAULT_WINDOW_SIZE.copy()
-screen = pygame.display.set_mode(WINDOW_SIZE)
-pygame.display.set_caption("Video Avatar")
+try:
+    screen = pygame.display.set_mode(WINDOW_SIZE)
+    # Установка иконки окна
+    if icon_path.exists():
+        icon = pygame.image.load(icon_path)
+        pygame.display.set_icon(icon)
+    else:
+        print(f"Предупреждение: Файл иконки {icon_path} не найден")
+except Exception as e:
+    print(f"Ошибка при инициализации окна Pygame: {e}")
+    sys.exit()
+pygame.display.set_caption("VideoVirtualAvatar")
 
 # Глобальные переменные
 DEFAULT_NUM_STAGES = 2
@@ -75,8 +86,7 @@ class VideoPlayer:
                 self.clip = self.clip.rotate(90)
         except Exception as e:
             print(f"Ошибка при загрузке видео {video_path}: {e}")
-            pygame.quit()
-            sys.exit()
+            raise
 
     def get_frame(self, current_time):
         try:
@@ -97,8 +107,7 @@ def update_video_paths_and_players(num_stages):
     # Проверка наличия видеофайлов
     for path in video_paths:
         if not path.exists():
-            print(f"Ошибка: Видеофайл {path} не найден")
-            return False
+            return False, f"Видеофайл {path} не найден"
     
     # Закрытие предыдущих плееров
     for player in players:
@@ -108,10 +117,9 @@ def update_video_paths_and_players(num_stages):
     players.clear()
     try:
         players.extend([VideoPlayer(path) for path in video_paths])
-        return True
+        return True, ""
     except Exception as e:
-        print(f"Ошибка при инициализации видеоплееров: {e}")
-        return False
+        return False, f"Ошибка при инициализации видеоплееров: {e}"
 
 def update_thresholds(num_stages):
     global THRESHOLDS
@@ -123,7 +131,9 @@ def update_thresholds(num_stages):
         THRESHOLDS = [0.02, 0.04, 0.06]
 
 # Инициализация начальных видео и порогов
-if not update_video_paths_and_players(NUM_STAGES):
+success, error = update_video_paths_and_players(NUM_STAGES)
+if not success:
+    print(error)
     pygame.quit()
     sys.exit()
 update_thresholds(NUM_STAGES)
@@ -162,12 +172,12 @@ class SettingsDialog(QDialog):
 
         # Проверка и обновление стадий
         if new_stages != NUM_STAGES:
-            if update_video_paths_and_players(new_stages):
-                NUM_STAGES = new_stages
-                update_thresholds(NUM_STAGES)
-            else:
-                print(f"Не удалось изменить количество стадий: требуются видеофайлы для {new_stages} стадий")
+            success, error = update_video_paths_and_players(new_stages)
+            if not success:
+                QMessageBox.critical(self, "Ошибка", error)
                 return
+            NUM_STAGES = new_stages
+            update_thresholds(NUM_STAGES)
 
         # Обновление размера окна
         if [width, height] != WINDOW_SIZE:
@@ -175,7 +185,7 @@ class SettingsDialog(QDialog):
                 WINDOW_SIZE = [width, height]
                 screen = pygame.display.set_mode(WINDOW_SIZE)
             except Exception as e:
-                print(f"Ошибка при изменении размера окна: {e}")
+                QMessageBox.critical(self, "Ошибка", f"Не удалось изменить размер окна: {e}")
                 return
 
         # Сохранение настроек
